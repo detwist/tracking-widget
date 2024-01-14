@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Timer Widget</title>
+    <style>
+        #codeInput, #timerDisplay {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div>
+    <button onclick="generateCode()">Generate Code</button>
+    <br>
+    <input type="text" id="codeInput" placeholder="Enter Code">
+    <button onclick="startTimer()">Start Timer</button>
+    <br>
+    <div id="timerDisplay"></div>
+</div>
+
+<!-- Add Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.3.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.3.1/firebase-database.js"></script>
+
+<script>
+    // Initialize Firebase with your project configuration
+    const firebaseConfig = {
+  apiKey: "AIzaSyDIer0_Y2xm2BxZn_xVfUXjREhfMQhv7_8",
+  authDomain: "tracking-code-d50e1.firebaseapp.com",
+  projectId: "tracking-code-d50e1",
+  storageBucket: "tracking-code-d50e1.appspot.com",
+  messagingSenderId: "869257166497",
+  appId: "1:869257166497:web:851aa515e36dd592ff7ae0",
+  measurementId: "G-EL5X1SEB4Z"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const database = firebase.database();
+    const generatedCodesRef = database.ref('generatedCodes');
+
+    let generatedCodes = [];
+
+    function generateCode() {
+        const code = generateRandomCode();
+        generatedCodes.push(code);
+        generatedCodesRef.set(generatedCodes); // Save generatedCodes to Firebase
+        alert(`Generated Code: ${code}`);
+    }
+
+    function generateRandomCode() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 10; i++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return code;
+    }
+
+    function startTimer() {
+        const codeInput = document.getElementById('codeInput').value;
+        if (generatedCodes.includes(codeInput)) {
+            const timerDisplay = document.getElementById('timerDisplay');
+            let countdown = 300;
+
+            const countdownInterval = setInterval(function () {
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    timerDisplay.innerHTML = 'Timer Expired';
+                } else {
+                    timerDisplay.innerHTML = `Countdown: ${countdown} seconds`;
+                    countdown--;
+
+                    // Save countdown value to Firebase for synchronization
+                    database.ref('countdown').set(countdown);
+                }
+            }, 1000);
+        } else {
+            alert('Invalid Code. Please generate a code first.');
+        }
+    }
+
+    // Listen for changes in the countdown value from other users
+    database.ref('countdown').on('value', (snapshot) => {
+        const countdownValue = snapshot.val();
+        const timerDisplay = document.getElementById('timerDisplay');
+        if (countdownValue !== null) {
+            timerDisplay.innerHTML = `Countdown: ${countdownValue} seconds`;
+        }
+    });
+</script>
+
+</body>
+</html>
